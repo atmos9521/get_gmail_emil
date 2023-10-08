@@ -36,69 +36,6 @@ namespace Get_Gmail
         //OAuth用戶端ID
         //下載json改名成credentials.json放到bin\Debug內
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            string host = "imap.gmail.com";
-            int port = 993;
-            string username = "willychen0206@gmail.com";
-            string password = "!QAZ2wsx9521";
-
-            using (TcpClient client = new TcpClient())
-            {
-                client.Connect(host, port);
-                using (SslStream sslStream = new SslStream(client.GetStream()))
-                {
-                    sslStream.AuthenticateAsClient(host);
-                    StreamReader reader = new StreamReader(sslStream);
-                    StreamWriter writer = new StreamWriter(sslStream);
-
-                    // Read the greeting message from the server
-                    Console.WriteLine(reader.ReadLine());
-
-                    // Login to the server
-                    writer.WriteLine($"LOGIN {username} {password}");
-                    writer.Flush();
-
-                    // Read the response from the server
-                    string response = reader.ReadLine();
-                    Console.WriteLine(response);
-
-                    // List the available mailboxes
-                    writer.WriteLine("LIST \"\" \"*\"");
-                    writer.Flush();
-
-                    // Read the list of mailboxes
-                    response = reader.ReadLine();
-                    Console.WriteLine(response);
-
-                    // Select the mailbox (inbox in this case)
-                    writer.WriteLine("SELECT INBOX");
-                    writer.Flush();
-
-                    // Read the mailbox information
-                    response = reader.ReadLine();
-                    Console.WriteLine(response);
-
-                    // Search for all unseen messages
-                    writer.WriteLine("SEARCH UNSEEN");
-                    writer.Flush();
-
-                    // Read the list of unseen messages
-                    response = reader.ReadLine();
-                    Console.WriteLine(response);
-
-                    // Logout and close the connection
-                    writer.WriteLine("LOGOUT");
-                    writer.Flush();
-                }
-            }
-
-            Console.ReadLine();
-        }
-
-
-
-
         string[] Scopes = { GmailService.Scope.GmailReadonly };
         string ApplicationName = "Gmail API C# Quickstart";
 
@@ -106,17 +43,27 @@ namespace Get_Gmail
         {
             UserCredential credential;
 
-            using (var stream =
-                new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
+            openFileDialog1.Filter = "JSON Files (*.json)|*.json";
+            openFileDialog1.Title = "Select JSON File";
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                string credPath = "token.json";
-                credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.Load(stream).Secrets,
-                    Scopes,
-                    "user",
-                    CancellationToken.None,
-                    new FileDataStore(credPath, true)).Result;
-                Console.WriteLine("Credential file saved to: " + credPath);
+                // bin\Debug\credentials.json
+                using (var stream = new FileStream(openFileDialog1.FileName, FileMode.Open, FileAccess.Read))
+                {
+                    string credPath = "token.json";
+                    credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                        GoogleClientSecrets.Load(stream).Secrets,
+                        Scopes,
+                        "user",
+                        CancellationToken.None,
+                        new FileDataStore(credPath, true)).Result;
+                    Console.WriteLine("Credential file saved to: " + credPath);
+                }
+            }
+            else
+            {
+                Console.WriteLine("No credentials file selected. Exiting...");
+                return;
             }
 
             // 创建 Gmail 服务
@@ -174,24 +121,24 @@ namespace Get_Gmail
             var messages = request.Execute().Messages;
             if (messages != null && messages.Count > 0)
             {
-                Console.WriteLine("符合条件的邮件：");
                 foreach (var message in messages)
                 {
                     var email = service.Users.Messages.Get(userId, message.Id).Execute();
                     // 获取主题
                     string subject = email.Payload.Headers.FirstOrDefault(h => h.Name == "Subject")?.Value;
                     // 打印主题
-                    Console.WriteLine($"主题： {subject}");
+                    Console.WriteLine($"主題： {subject}");
                     // 获取发件人
                     string from = email.Payload.Headers.FirstOrDefault(h => h.Name == "From")?.Value;
                     // 打印发件人
-                    Console.WriteLine($"发件人： {from}");
+                    Console.WriteLine($"發件人： {from}");
                     // 获取时间
                     string internalDate = email.InternalDate.ToString();
                     // 打印时间
-                    Console.WriteLine($"时间： {internalDate}");
+                    Console.WriteLine($"時間： {internalDate}");
                     // 获取邮件内容
                     string body = GetEmailBody(email.Payload, service, userId, message.Id);
+                    Console.WriteLine($"內容： {body}");
                     Console.WriteLine("---------");
                 }
             }
